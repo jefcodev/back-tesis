@@ -336,7 +336,7 @@ const putUpdateCompras = async (req, res) => {
 
 // Bitacora
 const getBitacora = async (req, res) => {
-    const response = await db.any("select * from tbl_bitacora")
+    const response = await db.any("select * from tbl_bitacora order by fecha_actual desc")
     res.json(response)
 }
 

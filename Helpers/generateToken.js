@@ -8,14 +8,14 @@ const tokenSign = async (id, rol) => {
         },
         "SistemaHUacales",
         {
-            expiresIn: "12h",
+            expiresIn: "24d",
         }
     );
 };
 
 const verifyToken = async (token) => {
     try {
-        return jwt.verify(token, "SistemaHUacales");
+        return jwt.verify(token, "SistemaHuacales");
     } catch (e) {
         return null;
     }

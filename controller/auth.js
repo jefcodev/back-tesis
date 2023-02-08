@@ -2,6 +2,7 @@ const { response } = require("express")
 const { db } = require("../cnn")
 const { compare } = require("../Helpers/handleBcrypt")
 const { tokenSign } = require("../Helpers/generateToken")
+const { decodeSign } = require("../Helpers/generateToken");
 
 const loginCtrl = async (req, res) => {
     try {
@@ -23,7 +24,7 @@ const loginCtrl = async (req, res) => {
                 const token = await tokenSign(response[0].id_usuario, response[0].tipo_usuario);
                 console.log('7')
                 // response.status.send(data)
-                res.status(200).send(`{"status":"OK", "token":"${token}"}`)
+                res.status(200).send(`{"status":"OK", "token":"${token}", "usuario":"${response[0].tipo_usuario}"}`)
                 console.log('8')
 
             } else {
@@ -37,6 +38,18 @@ const loginCtrl = async (req, res) => {
         res.status(404).send(`{"status":"Error", "resp":"Error"}`)
     }
 }
+const getUSer = async (req, res) => {
+    // const { token } = req.body
+    const token = req.params.token;
+    // console.log(token)
+    const Rtoken = await decodeSign(token, null);
+    // console.log("asdas")
+    res.status(200).send(`{"id":"${Rtoken._id}", "rol":"${Rtoken.role}"}`)
+    console.log(Rtoken)
+    // res.status(200).send(Rtoken)
+
+}
+
 
 
 // const loginCtrl = async (req, res) => {
@@ -71,6 +84,6 @@ const loginCtrl = async (req, res) => {
 //     }
 // }
 module.exports = {
-    loginCtrl
+    loginCtrl, getUSer
 
 }
