@@ -428,14 +428,21 @@ const postCreateBitacora = async (req, res) => {
         }
 
 
-    } else if (movimiento == 'Prestamo') {
+    } else if (movimiento == 'Préstamo') {
+
         const responseC = await db.any("select (nombre || ' ' || apellido) as cliente from tbl_cliente  where cedula=$1", [cliente])
+
         if (responseC == '') {
-            res.status(200).send('error')
+
+            res.status(200).send('errorasdasd  as' + responseC)
         } else {
+
+
             const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario) 
             values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_actual, movimiento, accion, cantidad, ayudante, responseC[0].cliente, observacion, numero_acta, usuario])
+
             res.status(200).send('OK')
+
         }
 
     }
