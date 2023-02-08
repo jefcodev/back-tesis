@@ -1,5 +1,7 @@
 const { response } = require("express")
+
 const { db } = require("../cnn")
+const { encrypt } = require("../Helpers/handleBcrypt")
 
 //
 
@@ -10,6 +12,28 @@ const getUsuarios = async (req, res) => {
     res.json(response)
 }
 
+
+const postCreateUsuarios = async (req, res) => {
+    console.log("asdasd")
+    const { tipo_usuario, nombre_usuario, clave_usuario } = req.body
+    const password = await encrypt(clave_usuario);
+
+    const response = await db.any(`INSERT INTO tbl_usuario ( tipo_usuario, nombre_usuario, clave_usuario) 
+    values($1,$2,$3)`, [tipo_usuario, nombre_usuario, password])
+    res.json({
+        message: 'tbl_Usuario creada correctamente'
+    })
+}
+
+const putUpdateUsuarios = async (req, res) => {
+    const { id_usuario, tipo_usuario, nombre_usuario, clave_usuario } = req.body
+    const password = await encrypt(clave_usuario);
+    const response = await db.any(`UPDATE tbl_usuario set tipo_usuario=$2, nombre_usuario=$3, clave_usuario=$4 
+    where id_usuario=$1`, [id_usuario, tipo_usuario, nombre_usuario, password])
+    res.json({
+        message: 'Usuario actualizado correctamente'
+    })
+}
 
 // Clientes
 
@@ -66,6 +90,21 @@ const putUpdateGuardias = async (req, res) => {
         message: 'Cliente actualizado correctamente'
     })
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Pedidos
@@ -489,6 +528,8 @@ module.exports = {
     getClientesCount,
     getPedidosCount,
     getCountPrestamos,
-    getBitacorabyClientandAyudante
+    getBitacorabyClientandAyudante,
+    putUpdateUsuarios,
+    postCreateUsuarios
 
 }
