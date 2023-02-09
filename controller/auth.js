@@ -8,24 +8,22 @@ const loginCtrl = async (req, res) => {
     try {
         const { nombre_usuario, clave_usuario } = req.body
 
-        console.log('100' + nombre_usuario)
-
         const response = await db.any('select id_usuario, tipo_usuario, nombre_usuario, clave_usuario from tbl_usuario where nombre_usuario=$1', [nombre_usuario]);
-        console.log(response)
+
         if (response == '') {
-            console.log('3')
+
             res.status(200).send(`{"status":"Error", "resp":"Usuario no registrado"},"usuario":"${response[0].tipo_usuario}" `)
         } else {
-            console.log('4')
+
             checkPassword = await compare(clave_usuario, response[0].clave_usuario);
-            console.log('5')
+
             if (checkPassword) {
-                console.log('6')
+
                 const token = await tokenSign(response[0].id_usuario, response[0].tipo_usuario);
-                console.log('7')
+
                 // response.status.send(data)
                 res.status(200).send(`{"status":"OK", "token":"${token}", "usuario":"${response[0].tipo_usuario}"}`)
-                console.log('8')
+
 
             } else {
                 res.status(200).send(`{"status":"Error", "resp":"Contaseña incorrecta"} `)

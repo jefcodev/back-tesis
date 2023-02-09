@@ -111,7 +111,7 @@ const putUpdateGuardias = async (req, res) => {
 
 const getPedidos = async (req, res) => {
 
-    const response = await db.any("SELECT pe.id_pedido, pe.fecha_pedido, pe.fecha_entrega, pe.cantidad_libras, pe.ruta, pe.observasiones,(cl.nombre || ' ' || cl.apellido) as client  FROM tbl_pedido pe INNER join tbl_cliente cl on cl.cedula=pe.fk_tbl_cliente_cedula")
+    const response = await db.any("SELECT pe.id_pedido, pe.fecha_pedido, pe.fecha_entrega, pe.cantidad_libras, pe.ruta, pe.observasiones,(cl.nombre || ' ' || cl.apellido) as client, estado  FROM tbl_pedido pe INNER join tbl_cliente cl on cl.cedula=pe.fk_tbl_cliente_cedula")
     res.json(response)
 }
 
@@ -122,13 +122,27 @@ const getPedidosCount = async (req, res) => {
 }
 
 const postCreatePedidos = async (req, res) => {
-    const { fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula } = req.body
-    const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula) 
-    values($1,$2,$3,$4,$5, $6)`, [fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula])
-    res.json({
-        message: 'Ayudante creado correctamente'
-
-    })
+    const { fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, accion } = req.body
+    if (accion == 'true') {
+        const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, estado) 
+        values($1,$2,$3,$4,$5, $6, true)`, [fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula])
+        res.json({
+            message: 'AyudanteA creado correctamente'
+    
+        })
+    } else if (accion == 'false') {
+        const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, estado) 
+        values($1,$2,$3,$4,$5,$6)`, [fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula,false])
+        res.json({
+            message: 'Ayudante creado correctamente'
+    
+        })
+    }
+    // const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, estado) 
+    // values($1,$2,$3,$4,$5, $6, false)`, [fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula])
+    // // console.log("asdasdas")
+    // console.log(response);
+    
 }
 
 const putUpdatePedidos = async (req, res) => {
