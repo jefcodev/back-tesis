@@ -4,7 +4,7 @@ const checkRoleAuth = require("../middleware/rol")
 const { getClientes, putUpdateUsuarios, postCreateUsuarios, getGuardias, getPedidos, getUsuarios, getDespachos, getPrestamos, getInsumos, postCreateClientes, postCreateGuardias,
     postCreatePedidos, postCreateInsumos, postCreatePrestamos, postCreateDespachos, putUpdateClientes, putUpdateGuardias, putUpdatePedidos, putUpdateDespachos,
     putUpdatePrestamos, putUpdateInsumos, getAutoridades, putUpdateAutoridades, postCreateAutoridades, getTinas, getDevolucion, getCompras, getReciclados,
-    postCreateReciclados,getnumTInas,getnumTInasP, getDataPedido, getBitacorabyClientandAyudante, putUpdateReciclados, getPrestamos2, postCreateDevolucion, putUpdateDevolucion, postCreateCompras, putUpdateCompras, getClientesCount, getPedidosCount, getCountPrestamos, getBitacora, postCreateBitacora } = require("../controller/insumos.controller");
+    postCreateReciclados, getPrestamosss, getnumTInas, getnumTInasP, getNumPrestamos, getDataPedido, getBitacorabyClientandAyudante, putUpdateReciclados, getPrestamos2, postCreateDevolucion, putUpdateDevolucion, postCreateCompras, putUpdateCompras, getClientesCount, getPedidosCount, getCountPrestamos, getBitacora, postCreateBitacora } = require("../controller/insumos.controller");
 
 
 
@@ -53,6 +53,7 @@ router.put("/despachos", putUpdateDespachos)
 router.get("/prestamos", getPrestamos)
 router.get("/prestamosCount", getCountPrestamos)
 router.get("/prestamoss", getPrestamos2)
+router.get("/prestamosss", getPrestamosss)
 
 router.post("/prestamos", postCreatePrestamos)
 router.put("/prestamos", putUpdatePrestamos)
@@ -97,5 +98,6 @@ router.get("/bit", getBitacorabyClientandAyudante)
 router.get("/getpedido/:id_pedido", getDataPedido)
 router.get("/gettinasp/:id_pedido", getnumTInasP)
 router.get("/gettinas/:id_cliente", getnumTInas)
+router.get("/getnumPrestamos", getNumPrestamos)
 module.exports = router
 

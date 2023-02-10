@@ -43,7 +43,7 @@ const getUSer = async (req, res) => {
     const Rtoken = await decodeSign(token, null);
     // console.log("asdas")
     res.status(200).send(`{"id":"${Rtoken._id}", "rol":"${Rtoken.role}"}`)
-    console.log(Rtoken)
+   
     // res.status(200).send(Rtoken)
 
 }
