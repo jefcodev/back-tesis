@@ -264,7 +264,7 @@ const getPrestamos = async (req, res) => {
 
 }
 const getNumPrestamos = async (req, res) => {
-    const response = await db.any("select count(id_prestamo_tinas) from tbl_prestamo_tinas where now()<fecha_entrega and numero_tinas>0")
+    const response = await db.any("select count(id_prestamo_tinas) from tbl_prestamo_tinas where now()>fecha_entrega and numero_tinas>0")
     res.json(response)
 
 
@@ -277,7 +277,7 @@ const getPrestamos2 = async (req, res) => {
 
 }
 const getPrestamosss = async (req, res) => {
-    const response = await db.any("SELECT (cl.nombre || ' '|| cl.apellido) as cliente, pt.numero_tinas, pt.fecha_prestamo,pt.fecha_entrega, pt.id_prestamo_tinas FROM public.tbl_prestamo_tinas pt inner join tbl_cliente cl on cl.cedula = pt.fk_tbl_cliente_cedula where numero_tinas >0 and now()<fecha_entrega;")
+    const response = await db.any("SELECT (cl.nombre || ' '|| cl.apellido) as cliente, pt.numero_tinas, pt.fecha_prestamo,pt.fecha_entrega, pt.id_prestamo_tinas FROM public.tbl_prestamo_tinas pt inner join tbl_cliente cl on cl.cedula = pt.fk_tbl_cliente_cedula where numero_tinas >0 and now()>fecha_entrega;")
     res.json(response)
 
 
