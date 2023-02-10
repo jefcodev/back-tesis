@@ -111,7 +111,7 @@ const putUpdateGuardias = async (req, res) => {
 
 const getPedidos = async (req, res) => {
 
-    const response = await db.any("SELECT pe.id_pedido, pe.fecha_pedido, pe.fecha_entrega, pe.cantidad_libras, pe.ruta, pe.observasiones,(cl.nombre || ' ' || cl.apellido) as client, estado  FROM tbl_pedido pe INNER join tbl_cliente cl on cl.cedula=pe.fk_tbl_cliente_cedula")
+    const response = await db.any("SELECT pe.id_pedido, pe.fecha_pedido, pe.fecha_entrega, pe.cantidad_libras, pe.ruta, pe.observasiones,(cl.nombre || ' ' || cl.apellido) as client, estado  FROM tbl_pedido pe INNER join tbl_cliente cl on cl.cedula=pe.fk_tbl_cliente_cedula where pe.estado=false")
     res.json(response)
 }
 
@@ -122,7 +122,8 @@ const getPedidosCount = async (req, res) => {
 }
 
 const postCreatePedidos = async (req, res) => {
-    const { fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, observacionesPrestamo, fk_tbl_cliente_cedula, accion, numero_tinas, fk_tbl_guardia_cedula, numero_acta } = req.body
+    const { numero_pollos, fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, observacionesPrestamo, fk_tbl_cliente_cedula, accion, numero_tinas, fk_tbl_guardia_cedula, numero_acta, cantidad_libras_p } = req.body
+    // console.log(numero_pollos)
     if (accion == 'true') {
         const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, estado) 
         values($1,$2,$3,$4,$5, $6, true)`, [fecha_pedido, fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula])
@@ -132,17 +133,29 @@ const postCreatePedidos = async (req, res) => {
         values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_pedido, cantidad_libras, numero_tinas, ruta, observasiones, fk_tbl_cliente_cedula, fk_tbl_guardia_cedula, true, resultPedido[0].id_pedido])
 
         const resultDespacho = await db.any("SELECT * FROM tbl_despacho ORDER BY id_despacho DESC LIMIT 1;")
-// console.log("paso")
-        const respons = await db.any(`INSERT INTO tbl_prestamo_tinas (numero_tinas, fecha_prestamo, observasiones, fk_tbl_cliente_cedula, numero_acta, fecha_entrega,id_despacho_fk, product_id,  estado) 
-    values($1,$2,$3,$4,$5,$6,$7,1,false)`, [numero_tinas, fecha_pedido, observacionesPrestamo, fk_tbl_cliente_cedula, numero_acta, fecha_entrega, resultDespacho[0].id_despacho_fk])
-    // console.log("paso")
+        // console.log("paso")
+
+        ///TBL prestamos///
+        const resultPrestamos = await db.any("SELECT * FROM tbl_prestamo_tinas where fk_tbl_cliente_cedula=$1", [fk_tbl_cliente_cedula])
+        // console.log(resultPrestamos)
+        if (resultPrestamos == "") {
+            const respons = await db.any(`INSERT INTO tbl_prestamo_tinas (numero_tinas, fecha_prestamo, observasiones, fk_tbl_cliente_cedula, numero_acta, fecha_entrega,id_despacho_fk, product_id,  estado) 
+            values($1,$2,$3,$4,$5,$6,$7,1,false)`, [numero_tinas, fecha_pedido, observacionesPrestamo, fk_tbl_cliente_cedula, numero_acta, fecha_entrega, resultDespacho[0].id_despacho])
+
+        } else {
+
+            const response = await db.any(`UPDATE tbl_prestamo_tinas
+            SET  numero_tinas=$2, fecha_entrega=$3
+            WHERE id_prestamo_tinas=$1`, [resultPrestamos[0].id_prestamo_tinas, (resultPrestamos[0].numero_tinas + numero_tinas), fecha_entrega])
+        }
+
 
         res.json({
             message: 'AyudanteA creado correctamente'
         })
     } else if (accion == 'false') {
-        const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, estado) 
-        values($1,$2,$3,$4,$5,$6)`, [fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, false])
+        const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, num_pollos, cantidad_libras_p,estado) 
+        values($1,$2,$3,$4,$5,$6,$7,$8)`, [fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, numero_pollos, cantidad_libras_p, false])
         res.json({
             message: 'AyudanteA creado correctamente'
         })
@@ -161,17 +174,46 @@ const putUpdatePedidos = async (req, res) => {
         message: 'Pedido actualizado correctamente'
     })
 }
-
 // despachos
 const getDespachos = async (req, res) => {
-    const response = await db.any("select d.id_despacho, d.fecha_despacho, d.numero_tinas, d.cantidad_libras, d.ruta, d.observasiones, (cl.nombre || ' ' || cl.apellido) as cliente, (g.nombre  || ' ' || g.apellido) as guardia from tbl_despacho d inner join tbl_guardia g on d.fk_tbl_guardia_cedula = g.cedula inner join tbl_cliente cl on cl.cedula = d.fk_tbl_cliente_cedula")
+    const response = await db.any("select d.id_despacho, d.fecha_despacho, d.numero_tinas, d.cantidad_libras, d.ruta, d.observasiones, (cl.nombre || ' ' || cl.apellido) as cliente, (g.nombre  || ' ' || g.apellido) as guardia from tbl_despacho d inner join tbl_guardia g on d.fk_tbl_guardia_cedula = g.cedula inner join tbl_cliente cl on cl.cedula = d.fk_tbl_cliente_cedula where d.estado=true")
     res.json(response)
 }
 
+const getDataPedido = async (req, res) => {
+    const id_pedido = req.params.id_pedido;
+    // const { id_pedido } = req.body
+    const respPedido = await db.any("SELECT * FROM tbl_pedido where id_pedido=$1", [id_pedido]);
+    // const response = await db.any("select d.id_despacho, d.fecha_despacho, d.numero_tinas, d.cantidad_libras, d.ruta, d.observasiones, (cl.nombre || ' ' || cl.apellido) as cliente, (g.nombre  || ' ' || g.apellido) as guardia from tbl_despacho d inner join tbl_guardia g on d.fk_tbl_guardia_cedula = g.cedula inner join tbl_cliente cl on cl.cedula = d.fk_tbl_cliente_cedula where d.estado=true")
+    res.json(respPedido)
+}
+
+const getnumTInas = async (req, res) => {
+    const id_cliente = req.params.id_cliente;
+    // const { id_pedido } = req.body
+    const respPedido = await db.any("select sum(numero_tinas) as numero_tinas from tbl_prestamo_tinas where fk_tbl_cliente_cedula=$1 and estado=false", [id_cliente]);
+    // const response = await db.any("select d.id_despacho, d.fecha_despacho, d.numero_tinas, d.cantidad_libras, d.ruta, d.observasiones, (cl.nombre || ' ' || cl.apellido) as cliente, (g.nombre  || ' ' || g.apellido) as guardia from tbl_despacho d inner join tbl_guardia g on d.fk_tbl_guardia_cedula = g.cedula inner join tbl_cliente cl on cl.cedula = d.fk_tbl_cliente_cedula where d.estado=true")
+    res.json(respPedido)
+}
+
+
+const getnumTInasP = async (req, res) => {
+    const id_pedido = req.params.id_pedido;
+    // const { id_pedido } = req.body
+    const respPed = await db.any("select * from tbl_pedido where id_pedido= $1", [id_pedido]);
+    console.log(respPed)
+    console.log(respPed.fk_tbl_cliente_cedula)
+
+    // const respPedido = await db.any("select pt.numero_tinas as numero_tinas from tbl_pedido pd inner join tbl_despacho d on pd.id_pedido=d.id_pedido_fk inner join tbl_prestamo_tinas pt on d.id_despacho=pt.id_despacho_fk where id_pedido=$1 and pt.estado=false", [id_pedido]);
+    // const response = await db.any("select d.id_despacho, d.fecha_despacho, d.numero_tinas, d.cantidad_libras, d.ruta, d.observasiones, (cl.nombre || ' ' || cl.apellido) as cliente, (g.nombre  || ' ' || g.apellido) as guardia from tbl_despacho d inner join tbl_guardia g on d.fk_tbl_guardia_cedula = g.cedula inner join tbl_cliente cl on cl.cedula = d.fk_tbl_cliente_cedula where d.estado=true")
+    const respPedido = await db.any("select sum(numero_tinas) as numero_tinas from tbl_prestamo_tinas where fk_tbl_cliente_cedula=$1 and estado=false", [respPed[0].fk_tbl_cliente_cedula]);
+
+    res.json(respPedido)
+}
 const postCreateDespachos = async (req, res) => {
-    const { id_pedido, numero_tinas, fk_tbl_guardia_cedula, observasiones, numero_acta, fecha_actual } = req.body
-    const respPedido = await db.any("SELECT *FROM tbl_pedido where id_pedido=$1", [id_pedido]);
-    console.log(respPedido)
+    const { id_pedido, numero_tinas, fk_tbl_guardia_cedula, observasionesPrestamo, numero_acta, fecha_actual, fecha_entrega } = req.body
+    const respPedido = await db.any("SELECT * FROM tbl_pedido where id_pedido=$1", [id_pedido]);
+    // console.log(respPedido)
     const respUdpdatePedido = await db.any("UPDATE tbl_pedido SET  fecha_entrega=$2, estado=$3 WHERE id_pedido=$1;", [id_pedido, fecha_actual, true]);
 
     //CONSULTAS AL PEDIDO
@@ -179,11 +221,34 @@ const postCreateDespachos = async (req, res) => {
     //ACTUALIZAR EL PEDIDO
     //
     const response = await db.any(`INSERT INTO tbl_despacho (fecha_despacho, cantidad_libras, numero_tinas, ruta, observasiones, fk_tbl_cliente_cedula, fk_tbl_guardia_cedula, estado, id_pedido_fk) 
-    values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_actual, respPedido[0].cantidad_libras, numero_tinas, respPedido[0].ruta, observasiones, respPedido[0].fk_tbl_cliente_cedula, fk_tbl_guardia_cedula, true, id_pedido])
-    res.json({
-        message: 'tbl_despacho creada correctamente'
+    values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_actual, respPedido[0].cantidad_libras, numero_tinas, respPedido[0].ruta, "", respPedido[0].fk_tbl_cliente_cedula, fk_tbl_guardia_cedula, true, id_pedido])
 
-    })
+    const resultDespacho = await db.any("SELECT * FROM tbl_despacho ORDER BY id_despacho DESC LIMIT 1;")
+
+    const resultPrestamos = await db.any("SELECT * FROM tbl_prestamo_tinas where fk_tbl_cliente_cedula=$1", [respPedido[0].fk_tbl_cliente_cedula])
+
+    if (resultPrestamos == "") {
+        const respons = await db.any(`INSERT INTO tbl_prestamo_tinas (numero_tinas, fecha_prestamo, observasiones, fk_tbl_cliente_cedula, numero_acta, fecha_entrega,id_despacho_fk, product_id,  estado) 
+        values($1,$2,$3,$4,$5,$6,$7,1,false)`, [numero_tinas, fecha_actual, observasionesPrestamo, respPedido[0].fk_tbl_cliente_cedula, numero_acta, fecha_entrega, resultDespacho[0].id_despacho])
+        res.json({
+            message: 'tbl_despacho creada correctamente'
+
+        })
+    } else {
+        const response = await db.any(`UPDATE tbl_prestamo_tinas
+            SET  numero_tinas=$2, fecha_entrega=$3
+            WHERE id_prestamo_tinas=$1`, [resultPrestamos[0].id_prestamo_tinas, (resultPrestamos[0].numero_tinas + numero_tinas), fecha_entrega])
+
+        res.json({
+            message: 'AyudanteA creado correctamente'
+        })
+    }
+
+
+
+    // console.log("paso")
+
+
 }
 const putUpdateDespachos = async (req, res) => {
     const { id_despacho, fecha_despacho, cantidad_libras, numero_tinas, ruta, observasiones, fk_tbl_cliente_cedula, fk_tbl_guardia_cedula } = req.body
@@ -346,6 +411,14 @@ const postCreateDevolucion = async (req, res) => {
     const { cantidad, observacion, fecha, fk_tbl_prestamo_tinas_id, product_id } = req.body
     const response = await db.any(`INSERT INTO tbl_devolucion (cantidad, observacion, fecha, fk_tbl_prestamo_tinas_id, product_id) 
     values($1,$2, $3, $4,1)`, [cantidad, observacion, fecha, fk_tbl_prestamo_tinas_id, product_id])
+
+    const resultPrestamos = await db.any("SELECT * FROM tbl_prestamo_tinas where id_prestamo_tinas=$1", [fk_tbl_prestamo_tinas_id])
+
+
+    const resp = await db.any(`UPDATE tbl_prestamo_tinas
+    SET  numero_tinas=$2
+    WHERE id_prestamo_tinas=$1`, [fk_tbl_prestamo_tinas_id, (resultPrestamos[0].numero_tinas - cantidad)])
+
     res.json({
         message: 'tbl_devolucion creada correctamente'
 
@@ -561,5 +634,8 @@ module.exports = {
     getBitacorabyClientandAyudante,
     putUpdateUsuarios,
     postCreateUsuarios
+    , getDataPedido,
+    getnumTInas,
+    getnumTInasP
 
 }

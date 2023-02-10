@@ -4,7 +4,7 @@ const checkRoleAuth = require("../middleware/rol")
 const { getClientes, putUpdateUsuarios, postCreateUsuarios, getGuardias, getPedidos, getUsuarios, getDespachos, getPrestamos, getInsumos, postCreateClientes, postCreateGuardias,
     postCreatePedidos, postCreateInsumos, postCreatePrestamos, postCreateDespachos, putUpdateClientes, putUpdateGuardias, putUpdatePedidos, putUpdateDespachos,
     putUpdatePrestamos, putUpdateInsumos, getAutoridades, putUpdateAutoridades, postCreateAutoridades, getTinas, getDevolucion, getCompras, getReciclados,
-    postCreateReciclados, getBitacorabyClientandAyudante, putUpdateReciclados, getPrestamos2, postCreateDevolucion, putUpdateDevolucion, postCreateCompras, putUpdateCompras, getClientesCount, getPedidosCount, getCountPrestamos, getBitacora, postCreateBitacora } = require("../controller/insumos.controller");
+    postCreateReciclados,getnumTInas,getnumTInasP, getDataPedido, getBitacorabyClientandAyudante, putUpdateReciclados, getPrestamos2, postCreateDevolucion, putUpdateDevolucion, postCreateCompras, putUpdateCompras, getClientesCount, getPedidosCount, getCountPrestamos, getBitacora, postCreateBitacora } = require("../controller/insumos.controller");
 
 
 
@@ -92,5 +92,10 @@ router.post("/bitacora", postCreateBitacora)
 router.get("/bit", getBitacorabyClientandAyudante)
 
 
+
+//ADICIONALES
+router.get("/getpedido/:id_pedido", getDataPedido)
+router.get("/gettinasp/:id_pedido", getnumTInasP)
+router.get("/gettinas/:id_cliente", getnumTInas)
 module.exports = router
 
