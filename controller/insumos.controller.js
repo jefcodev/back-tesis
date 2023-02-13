@@ -131,7 +131,7 @@ const postCreatePedidos = async (req, res) => {
         values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_pedido, cantidad_libras, numero_tinas, ruta, observasiones, fk_tbl_cliente_cedula, fk_tbl_guardia_cedula, true, resultPedido[0].id_pedido])
 
         const resultDespacho = await db.any("SELECT * FROM tbl_despacho ORDER BY id_despacho DESC LIMIT 1;")
-       
+
 
         ///TBL prestamos///
         const resultPrestamos = await db.any("SELECT * FROM tbl_prestamo_tinas where fk_tbl_cliente_cedula=$1", [fk_tbl_cliente_cedula])
@@ -199,7 +199,7 @@ const getnumTInasP = async (req, res) => {
     const id_pedido = req.params.id_pedido;
     // const { id_pedido } = req.body
     const respPed = await db.any("select * from tbl_pedido where id_pedido= $1", [id_pedido]);
-    
+
     // const respPedido = await db.any("select pt.numero_tinas as numero_tinas from tbl_pedido pd inner join tbl_despacho d on pd.id_pedido=d.id_pedido_fk inner join tbl_prestamo_tinas pt on d.id_despacho=pt.id_despacho_fk where id_pedido=$1 and pt.estado=false", [id_pedido]);
     // const response = await db.any("select d.id_despacho, d.fecha_despacho, d.numero_tinas, d.cantidad_libras, d.ruta, d.observasiones, (cl.nombre || ' ' || cl.apellido) as cliente, (g.nombre  || ' ' || g.apellido) as guardia from tbl_despacho d inner join tbl_guardia g on d.fk_tbl_guardia_cedula = g.cedula inner join tbl_cliente cl on cl.cedula = d.fk_tbl_cliente_cedula where d.estado=true")
     const respPedido = await db.any("select sum(numero_tinas) as numero_tinas from tbl_prestamo_tinas where fk_tbl_cliente_cedula=$1 and estado=false", [respPed[0].fk_tbl_cliente_cedula]);
@@ -258,7 +258,7 @@ const putUpdateDespachos = async (req, res) => {
 
 // prestamo tinas
 const getPrestamos = async (req, res) => {
-    const response = await db.any("select pt.id_prestamo_tinas, pt.fecha_prestamo, pt.numero_tinas, pt.observasiones, pt.numero_acta, pt.fecha_entrega, (cl.nombre || ' ' || cl.apellido) as cliente from tbl_prestamo_tinas pt inner join tbl_cliente cl  on pt.fk_tbl_cliente_cedula = cl.cedula")
+    const response = await db.any("select pt.id_prestamo_tinas, pt.fecha_prestamo, pt.numero_tinas, pt.observasiones, pt.numero_acta, pt.fecha_entrega, (cl.nombre || ' ' || cl.apellido) as cliente from tbl_prestamo_tinas pt inner join tbl_cliente cl  on pt.fk_tbl_cliente_cedula = cl.cedula where pt.numero_tinas>0 ")
     res.json(response)
 
 
@@ -269,6 +269,8 @@ const getNumPrestamos = async (req, res) => {
 
 
 }
+
+
 
 const getPrestamos2 = async (req, res) => {
     const response = await db.any("SELECT (cl.nombre || ' '|| cl.apellido) as cliente, pt.numero_tinas, pt.fecha_prestamo,pt.fecha_entrega, pt.id_prestamo_tinas FROM public.tbl_prestamo_tinas pt inner join tbl_cliente cl on cl.cedula = pt.fk_tbl_cliente_cedula where numero_tinas >0;")
@@ -473,6 +475,8 @@ const postCreateCompras = async (req, res) => {
     })
 }
 
+
+
 const putUpdateCompras = async (req, res) => {
 
     const { id_compras, fecha, numero_acta, cantidad, observacion, fk_tbl_autoridades_id, product_id } = req.body
@@ -493,12 +497,45 @@ const getBitacora = async (req, res) => {
 const getBitacorabyClientandAyudante = async (req, res) => {
     const { busqueda } = req.body;
     sql = `select * from tbl_bitacora where cliente || ayudante like '%` + busqueda + `%'`;
-  
+
     const response = await db.any(sql)
-  
+
     res.json(response)
 }
 
+const postCreateDevolucionAuto = async (req, res) => {
+
+    const { id_prestamo_tinas, fecha } = req.body
+    const respPrestamo = await db.any('SELECT id_prestamo_tinas, numero_tinas, fecha_prestamo, observasiones, fk_tbl_cliente_cedula, numero_acta, fecha_entrega, product_id, estado, id_despacho_fk FROM tbl_prestamo_tinas where id_prestamo_tinas=$1', [id_prestamo_tinas]);
+    if (respPrestamo == '') {
+        console.log("1")
+        response.send(`{"status":"Error", "resp":""}`)
+    } else {
+        console.log("2")
+        const respDevolucion = await db.any(`INSERT INTO tbl_devolucion( cantidad, observacion, fecha, fk_tbl_prestamo_tinas_id, product_id) 
+        VALUES ($1, $2, $3, $4, $5)`,
+            [respPrestamo[0].numero_tinas, 'Devolución completa', fecha, id_prestamo_tinas, 1])
+            console.log("3")
+
+
+        const resp = await db.any(`UPDATE tbl_prestamo_tinas
+    SET  numero_tinas=$2
+    WHERE id_prestamo_tinas=$1`, [id_prestamo_tinas, 0])
+        res.json({
+            message: 'Compra creada correctamente'
+        })
+        console.log("4")
+
+    }
+
+
+    // const response = await db.any(`INSERT INTO tbl_compras (fecha, numero_acta,cantidad, observacion,fk_tbl_autoridades_id, product_id) 
+    // values($1,$2,$3,$4,$5,1)`, [fecha, numero_acta, cantidad, observacion, fk_tbl_autoridades_id, product_id])
+
+    // res.json({
+    //     message: 'Compra creada correctamente'
+    // })
+}
 const postCreateBitacora = async (req, res) => {
 
     const { fecha_actual, movimiento, accion, cantidad, ayudante, cliente, observacion, numero_acta, usuario } = req.body
@@ -529,7 +566,7 @@ const postCreateBitacora = async (req, res) => {
 
     } else if (movimiento == 'Devolución') {
         const response = await db.any("select * from tbl_prestamo_tinas where id_prestamo_tinas=$1", [cliente])
-        
+
         if (response == '') {
             res.status(200).send('error')
         } else {
@@ -646,6 +683,7 @@ module.exports = {
     , getDataPedido,
     getnumTInas,
     getnumTInasP,
-    getPrestamosss
+    getPrestamosss,
+    postCreateDevolucionAuto
 
 }
