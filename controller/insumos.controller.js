@@ -659,6 +659,11 @@ const getProducto = async (req, res) => {
     res.json(response)
 }
 
+
+const getClient = async (req, res) => {
+    const response = await db.any('select * from cliente')
+    res.json(response)
+}
 const getProductoById = async (req, res) => {
     const id = req.params.id;
     const response = await db.any('select * from tbl_productos where id=$1', [id])
@@ -749,5 +754,6 @@ module.exports = {
     getnumTInasP,
     getPrestamosss,
     postCreateDevolucionAuto
+    ,getClient
 
 }
