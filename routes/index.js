@@ -4,12 +4,21 @@ const checkRoleAuth = require("../middleware/rol")
 const { getClientes, putUpdateUsuarios, postCreateUsuarios, getGuardias, getPedidos, getUsuarios, getDespachos, getPrestamos, getInsumos, postCreateClientes, postCreateGuardias,
     postCreatePedidos, postCreateInsumos, postCreatePrestamos, postCreateDespachos, putUpdateClientes, putUpdateGuardias, putUpdatePedidos, putUpdateDespachos,
     putUpdatePrestamos, putUpdateInsumos, getAutoridades, putUpdateAutoridades, postCreateAutoridades, getTinas, getDevolucion, getCompras, getReciclados,
-    postCreateReciclados, postCreateDevolucionAuto, getPrestamosss, getnumTInas, getnumTInasP, getNumPrestamos, getDataPedido, getBitacorabyClientandAyudante, putUpdateReciclados, getPrestamos2, postCreateDevolucion, putUpdateDevolucion, postCreateCompras, putUpdateCompras, getClientesCount, getPedidosCount, getCountPrestamos, getBitacora, postCreateBitacora } = require("../controller/insumos.controller");
+    postCreateReciclados, getProductoById, getProducto, crearProducto, actualizarProducto, deleteProducto, postCreateDevolucionAuto, getPrestamosss, getnumTInas, getnumTInasP, getNumPrestamos, getDataPedido, getBitacorabyClientandAyudante, putUpdateReciclados, getPrestamos2, postCreateDevolucion, putUpdateDevolucion, postCreateCompras, putUpdateCompras, getClientesCount, getPedidosCount, getCountPrestamos, getBitacora, postCreateBitacora } = require("../controller/insumos.controller");
 
 
 
 
 const router = Router()
+
+
+//Productos
+router.get("/productos", getProducto)
+router.get("/productos/:id", getProductoById)
+router.post("/productos", crearProducto)
+router.put("/productos/:id", actualizarProducto)
+router.delete("/productos/:id", deleteProducto)
+
 
 router.get("/usuarios", getUsuarios)
 router.post("/usuarios", postCreateUsuarios)

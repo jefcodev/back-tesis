@@ -515,7 +515,7 @@ const postCreateDevolucionAuto = async (req, res) => {
         const respDevolucion = await db.any(`INSERT INTO tbl_devolucion( cantidad, observacion, fecha, fk_tbl_prestamo_tinas_id, product_id) 
         VALUES ($1, $2, $3, $4, $5)`,
             [respPrestamo[0].numero_tinas, 'Devolución completa', fecha, id_prestamo_tinas, 1])
-            console.log("3")
+        console.log("3")
 
 
         const resp = await db.any(`UPDATE tbl_prestamo_tinas
@@ -637,10 +637,64 @@ const postCreateBitacora = async (req, res) => {
 
 
 
+
+
+
+//// ADICION  SIN IMPRTANCIA
+
+
+
+const getProducto = async (req, res) => {
+    const response = await db.any('select * from tbl_productos')
+    res.json(response)
+}
+
+const getProductoById = async (req, res) => {
+    const id = req.params.id;
+    const response = await db.any('select * from tbl_productos where id=$1', [id])
+    res.json(response)
+}
+
+const crearProducto = async (req, res) => {
+    const { nombre, precio, descripcion, fecha_creacion } = req.body
+    
+
+    const response = await db.any(`INSERT INTO tbl_productos ( nombre, precio, descripcion, fecha_creacion) 
+    values($1,$2,$3,$4)`, [nombre, precio, descripcion, fecha_creacion])
+    res.json({
+        message: 'tbl_Usuario creada correctamente'
+    })
+}
+
+const actualizarProducto = async (req, res) => {
+    const id = req.params.id;
+    const { nombre, precio, descripcion, fecha_creacion } = req.body
+
+    const response = await db.any(`UPDATE public.tbl_productos
+	SET nombre=$2, precio=$3, descripcion=$4, fecha_creacion=$5
+	WHERE id=$1`, [id, nombre, precio, descripcion, fecha_creacion])
+    res.json({
+        message: 'Usuario actualizado correctamente'
+    })
+}
+
+
+const deleteProducto = async (req, res) => {
+    const id = req.params.id;
+    const response = await db.any('DELETE FROM tbl_productos where id=$1', [id])
+    res.json(response)
+}
+
+
 module.exports = {
     getClientes,
+    getProducto,
+    crearProducto,
+    actualizarProducto,
+    deleteProducto,
     getGuardias,
     getPedidos,
+    getProductoById,
     getUsuarios,
     getDespachos,
     getNumPrestamos,
