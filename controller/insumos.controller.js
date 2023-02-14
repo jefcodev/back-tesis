@@ -505,7 +505,8 @@ const getBitacorabyClientandAyudante = async (req, res) => {
 
 const postCreateDevolucionAuto = async (req, res) => {
 
-    const { id_prestamo_tinas, fecha } = req.body
+    const { id_prestamo_tinas, fecha, usuario } = req.body
+    console.log(usuario)
     const respPrestamo = await db.any('SELECT id_prestamo_tinas, numero_tinas, fecha_prestamo, observasiones, fk_tbl_cliente_cedula, numero_acta, fecha_entrega, product_id, estado, id_despacho_fk FROM tbl_prestamo_tinas where id_prestamo_tinas=$1', [id_prestamo_tinas]);
     if (respPrestamo == '') {
         console.log("1")
@@ -517,6 +518,12 @@ const postCreateDevolucionAuto = async (req, res) => {
             [respPrestamo[0].numero_tinas, 'Devolución completa', fecha, id_prestamo_tinas, 1])
         console.log("3")
 
+        const responseC = await db.any("select (nombre || ' ' || apellido) as cliente from tbl_cliente  where cedula=$1", [respPrestamo[0].fk_tbl_cliente_cedula])
+
+        const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
+        values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha, 'Devolución', 'Crear', null, null, responseC[0].cliente, "Devolución completada", respPrestamo[0].numero_acta, usuario, respPrestamo[0].numero_tinas])
+
+        
 
         const resp = await db.any(`UPDATE tbl_prestamo_tinas
     SET  numero_tinas=$2
@@ -538,16 +545,18 @@ const postCreateDevolucionAuto = async (req, res) => {
 }
 const postCreateBitacora = async (req, res) => {
 
-    const { fecha_actual, movimiento, accion, cantidad, ayudante, cliente, observacion, numero_acta, usuario } = req.body
+    const { fecha_actual, movimiento, accion, cantidad, ayudante, cliente, observacion, numero_acta, numero_tinas, usuario } = req.body
+  
     if (movimiento == "Recicladas") {
+
 
         const response = await db.any("select (nombre || ' ' || apellido) as ayudante from tbl_autoridades where id=$1", [ayudante])
 
         if (response == '') {
             res.status(200).send('error')
         } else {
-            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario) 
-            values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_actual, movimiento, accion, cantidad, response[0].ayudante, cliente, observacion, numero_acta, usuario])
+            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario, numero_tinas) 
+            values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, response[0].ayudante, cliente, observacion, numero_acta, usuario, numero_tinas])
             res.status(200).send('OK')
         }
 
@@ -558,8 +567,8 @@ const postCreateBitacora = async (req, res) => {
         if (response == '') {
             res.status(200).send('error')
         } else {
-            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario) 
-            values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_actual, movimiento, accion, cantidad, response[0].ayudante, cliente, observacion, numero_acta, usuario])
+            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
+            values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, response[0].ayudante, cliente, observacion, numero_acta, usuario, numero_tinas])
             res.status(200).send('OK')
         }
 
@@ -575,8 +584,8 @@ const postCreateBitacora = async (req, res) => {
                 res.status(200).send('error')
             } else {
                 // console.log(responseC)
-                const resultDev = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario) 
-                values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_actual, movimiento, accion, cantidad, ayudante, responseC[0].cliente, observacion, response[0].numero_acta, usuario])
+                const resultDev = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
+                values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, ayudante, responseC[0].cliente, observacion, response[0].numero_acta, usuario, numero_tinas])
                 res.status(200).send('OK')
             }
 
@@ -587,8 +596,8 @@ const postCreateBitacora = async (req, res) => {
         if (responseC == '') {
             res.status(200).send('error')
         } else {
-            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario) 
-            values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_actual, movimiento, accion, cantidad, ayudante, responseC[0].cliente, observacion, numero_acta, usuario])
+            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario, numero_tinas) 
+            values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, ayudante, responseC[0].cliente, observacion, numero_acta, usuario, numero_tinas])
             res.status(200).send('OK')
         }
 
@@ -599,8 +608,8 @@ const postCreateBitacora = async (req, res) => {
         if (responseC == '' || responseA == '') {
             res.status(200).send('error')
         } else {
-            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario) 
-            values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_actual, movimiento, accion, cantidad, responseA[0].ayudante, responseC[0].cliente, observacion, numero_acta, usuario])
+            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
+            values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, responseA[0].ayudante, responseC[0].cliente, observacion, numero_acta, usuario, numero_tinas])
             res.status(200).send('OK')
         }
 
@@ -609,10 +618,11 @@ const postCreateBitacora = async (req, res) => {
         if (responseA == '') {
             res.status(200).send('error')
         } else {
-            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario) 
-            values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_actual, movimiento, accion, cantidad, responseA[0].ayudante, cliente, observacion, numero_acta, usuario])
+            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
+            values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, responseA[0].ayudante, cliente, observacion, numero_acta, usuario, numero_tinas])
             res.status(200).send('OK')
         }
+
 
 
     } else if (movimiento == 'Préstamo') {
@@ -625,8 +635,8 @@ const postCreateBitacora = async (req, res) => {
         } else {
 
 
-            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario) 
-            values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [fecha_actual, movimiento, accion, cantidad, ayudante, responseC[0].cliente, observacion, numero_acta, usuario])
+            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
+            values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, ayudante, responseC[0].cliente, observacion, numero_acta, usuario, numero_tinas])
 
             res.status(200).send('OK')
 
@@ -657,7 +667,7 @@ const getProductoById = async (req, res) => {
 
 const crearProducto = async (req, res) => {
     const { nombre, precio, descripcion, fecha_creacion } = req.body
-    
+
 
     const response = await db.any(`INSERT INTO tbl_productos ( nombre, precio, descripcion, fecha_creacion) 
     values($1,$2,$3,$4)`, [nombre, precio, descripcion, fecha_creacion])
