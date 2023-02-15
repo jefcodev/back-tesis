@@ -667,7 +667,7 @@ const getClient = async (req, res) => {
 const getProductoById = async (req, res) => {
     const id = req.params.id;
     const response = await db.any('select * from tbl_productos where id=$1', [id])
-    res.json(response)
+    res.json(response[0])
 }
 
 const crearProducto = async (req, res) => {
