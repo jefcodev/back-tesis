@@ -697,7 +697,7 @@ const actualizarProducto = async (req, res) => {
 const deleteProducto = async (req, res) => {
     const id = req.params.id;
     const response = await db.any('DELETE FROM tbl_productos where id=$1', [id])
-    res.json(response)
+    res.json("Eliminado")
 }
 
 
