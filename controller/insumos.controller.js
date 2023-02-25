@@ -110,7 +110,12 @@ const putUpdateGuardias = async (req, res) => {
 
 const getPedidos = async (req, res) => {
 
-    const response = await db.any("SELECT pe.id_pedido, pe.fecha_pedido, pe.fecha_entrega, pe.cantidad_libras, pe.ruta, pe.observasiones,(cl.nombre || ' ' || cl.apellido) as client, estado  FROM tbl_pedido pe INNER join tbl_cliente cl on cl.cedula=pe.fk_tbl_cliente_cedula where pe.estado=false")
+    const response = await db.any("SELECT pe.id_pedido, pe.fecha_pedido, pe.fecha_entrega, pe.cantidad_libras, pe.ruta, pe.observasiones,(cl.nombre || ' ' || cl.apellido) as client, estado  FROM tbl_pedido pe INNER join tbl_cliente cl on cl.cedula=pe.fk_tbl_cliente_cedula where pe.estado=false and pe.pendiente=true")
+    res.json(response)
+}
+const getPedidosPendientes = async (req, res) => {
+
+    const response = await db.any("SELECT pe.id_pedido, pe.fecha_pedido, pe.fecha_entrega, pe.cantidad_libras, pe.ruta, pe.observasiones,(cl.nombre || ' ' || cl.apellido) as client, estado  FROM tbl_pedido pe INNER join tbl_cliente cl on cl.cedula=pe.fk_tbl_cliente_cedula where pe.estado=false and pe.pendiente=false")
     res.json(response)
 }
 
@@ -120,11 +125,64 @@ const getPedidosCount = async (req, res) => {
     res.json(response)
 }
 
+const despacharpedidoPendiente = async (req, res) => {
+    console.log("asd")
+    const { fecha_entrega,usuario } = req.body
+    const id_pedido = req.params.id_pedido;
+
+
+    // const resPedido = await db.any(`select * from tbl_pedido where id_pedido=$1`, [id_pedido])
+    const resDespacho = await db.any(`select * from tbl_despacho where id_pedido_fk=$1`, [id_pedido])
+
+       // Actualizar la tabla pedido a true los dos estados
+    const respActualizarpedido = await db.any(`UPDATE public.tbl_pedido
+	SET estado=true, pendiente=true
+	WHERE id_pedido=$1`, [id_pedido]);
+    // actualizar en la tabla despacho el estado a true
+    const respActualizarDespacho = await db.any(`UPDATE public.tbl_despacho
+        SET estado=true
+        WHERE  id_pedido_fk=$1`, [id_pedido]);
+
+    // calcular el numero de tinas y realizar el prestamo
+
+
+
+   const respons = await db.any(`INSERT INTO tbl_prestamo_tinas
+    (numero_tinas, fecha_prestamo, observasiones, fk_tbl_cliente_cedula, numero_acta, fecha_entrega,id_despacho_fk, product_id,  estado) 
+   values($1,CURRENT_TIMESTAMP,$2,$3,$4,$5,$6,1,false)`, 
+   [resDespacho[0].numero_tinas, resDespacho[0].observasiones, resDespacho[0].fk_tbl_cliente_cedula, resDespacho[0].num_acta, fecha_entrega, resDespacho[0].id_despacho])
+
+   const responseC = await db.any("select (nombre || ' ' || apellido) as cliente from tbl_cliente  where cedula=$1", [resDespacho[0].fk_tbl_cliente_cedula])
+
+   const responseG = await db.any("select (nombre || ' ' || apellido) as guardia from tbl_guardia  where cedula=$1", [resDespacho[0].fk_tbl_guardia_cedula])
+
+   const resultBitacora = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
+   values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_entrega, 'Préstamo', 'Crear', resDespacho[0].cantidad_libras,responseG[0].guardia, responseC[0].cliente, "Préstamo realizado correctamente",resDespacho[0].num_acta, usuario, resDespacho[0].numero_tinas])
+
+
+    res.json({
+        message: 'AyudanteA creado correctamente'
+    })
+
+
+}
+
+
 const postCreatePedidos = async (req, res) => {
-    const { numero_pollos, fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, observacionesPrestamo, fk_tbl_cliente_cedula, accion, numero_tinas, fk_tbl_guardia_cedula, numero_acta, cantidad_libras_p } = req.body
+    const { numero_pollos,
+        fecha_pedido,
+        fecha_entrega,
+        cantidad_libras,
+        ruta,
+        observasiones,
+        observacionesPrestamo,
+        fk_tbl_cliente_cedula,
+        accion, numero_tinas,
+        fk_tbl_guardia_cedula,
+        numero_acta, cantidad_libras_p } = req.body
     if (accion == 'true') {
-        const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, estado) 
-        values($1,$2,$3,$4,$5, $6, true)`, [fecha_pedido, fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula])
+        const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, estado, pendiente) 
+        values($1,$2,$3,$4,$5, $6, true,true)`, [fecha_pedido, fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula])
 
         const resultPedido = await db.any("SELECT * FROM tbl_pedido ORDER BY id_pedido DESC LIMIT 1;")
         const respo = await db.any(`INSERT INTO tbl_despacho (fecha_despacho, cantidad_libras, numero_tinas, ruta, observasiones, fk_tbl_cliente_cedula, fk_tbl_guardia_cedula, estado, id_pedido_fk) 
@@ -152,8 +210,21 @@ const postCreatePedidos = async (req, res) => {
             message: 'AyudanteA creado correctamente'
         })
     } else if (accion == 'false') {
-        const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, num_pollos, cantidad_libras_p,estado) 
-        values($1,$2,$3,$4,$5,$6,$7,$8)`, [fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, numero_pollos, cantidad_libras_p, false])
+        const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, num_pollos, cantidad_libras_p,estado,pendiente) 
+        values($1,$2,$3,$4,$5,$6,$7,$8,true)`, [fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, numero_pollos, cantidad_libras_p, false])
+        res.json({
+            message: 'AyudanteA creado correctamente'
+        })
+    } else if (accion == 'pendiente') {
+        // console.log()
+        // const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, fecha_entrega, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, estado, pendiente) 
+        // values($1,$2,$3,$4,$5, $6, false,false)`, [fecha_pedido, fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula])
+        const response = await db.any(`INSERT INTO tbl_pedido (fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, num_pollos, cantidad_libras_p,estado,pendiente) 
+        values($1,$2,$3,$4,$5,$6,$7,$8,false)`, [fecha_pedido, cantidad_libras, ruta, observasiones, fk_tbl_cliente_cedula, numero_pollos, cantidad_libras_p, false])
+
+        const resultPedido = await db.any("SELECT * FROM tbl_pedido ORDER BY id_pedido DESC LIMIT 1;")
+        const respo = await db.any(`INSERT INTO tbl_despacho (fecha_despacho, cantidad_libras, numero_tinas, ruta, observasiones, fk_tbl_cliente_cedula, fk_tbl_guardia_cedula, estado, id_pedido_fk,num_acta) 
+        values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_pedido, cantidad_libras, numero_tinas, ruta, observasiones, fk_tbl_cliente_cedula, fk_tbl_guardia_cedula, false, resultPedido[0].id_pedido,numero_acta])
         res.json({
             message: 'AyudanteA creado correctamente'
         })
@@ -504,13 +575,14 @@ const getBitacorabyClientandAyudante = async (req, res) => {
 }
 
 const postCreateDevolucionAuto = async (req, res) => {
-
+console.log("asdasdakdjajs")
     const { id_prestamo_tinas, fecha, usuario } = req.body
-    console.log(usuario)
+   
     const respPrestamo = await db.any('SELECT id_prestamo_tinas, numero_tinas, fecha_prestamo, observasiones, fk_tbl_cliente_cedula, numero_acta, fecha_entrega, product_id, estado, id_despacho_fk FROM tbl_prestamo_tinas where id_prestamo_tinas=$1', [id_prestamo_tinas]);
     if (respPrestamo == '') {
-        console.log("1")
-        response.send(`{"status":"Error", "resp":""}`)
+        res.json({
+            message: 'Compra actualizada correctamente'
+        })
     } else {
         console.log("2")
         const respDevolucion = await db.any(`INSERT INTO tbl_devolucion( cantidad, observacion, fecha, fk_tbl_prestamo_tinas_id, product_id) 
@@ -523,7 +595,7 @@ const postCreateDevolucionAuto = async (req, res) => {
         const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
         values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha, 'Devolución', 'Crear', null, null, responseC[0].cliente, "Devolución completada", respPrestamo[0].numero_acta, usuario, respPrestamo[0].numero_tinas])
 
-        
+
 
         const resp = await db.any(`UPDATE tbl_prestamo_tinas
     SET  numero_tinas=$2
@@ -546,7 +618,7 @@ const postCreateDevolucionAuto = async (req, res) => {
 const postCreateBitacora = async (req, res) => {
 
     const { fecha_actual, movimiento, accion, cantidad, ayudante, cliente, observacion, numero_acta, numero_tinas, usuario } = req.body
-  
+
     if (movimiento == "Recicladas") {
 
 
@@ -557,7 +629,9 @@ const postCreateBitacora = async (req, res) => {
         } else {
             const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario, numero_tinas) 
             values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, response[0].ayudante, cliente, observacion, numero_acta, usuario, numero_tinas])
-            res.status(200).send('OK')
+            res.json({
+                message: 'Compra actualizada correctamente'
+            })
         }
 
 
@@ -569,7 +643,9 @@ const postCreateBitacora = async (req, res) => {
         } else {
             const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
             values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, response[0].ayudante, cliente, observacion, numero_acta, usuario, numero_tinas])
-            res.status(200).send('OK')
+            res.json({
+                message: 'Compra actualizada correctamente'
+            })
         }
 
 
@@ -586,7 +662,9 @@ const postCreateBitacora = async (req, res) => {
                 // console.log(responseC)
                 const resultDev = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
                 values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, ayudante, responseC[0].cliente, observacion, response[0].numero_acta, usuario, numero_tinas])
-                res.status(200).send('OK')
+                res.json({
+                    message: 'Compra actualizada correctamente'
+                })
             }
 
         }
@@ -598,7 +676,9 @@ const postCreateBitacora = async (req, res) => {
         } else {
             const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario, numero_tinas) 
             values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, ayudante, responseC[0].cliente, observacion, numero_acta, usuario, numero_tinas])
-            res.status(200).send('OK')
+            res.json({
+                message: 'Compra actualizada correctamente'
+            })
         }
 
     } else if (movimiento == 'Despacho') {
@@ -610,7 +690,9 @@ const postCreateBitacora = async (req, res) => {
         } else {
             const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
             values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, responseA[0].ayudante, responseC[0].cliente, observacion, numero_acta, usuario, numero_tinas])
-            res.status(200).send('OK')
+            res.json({
+                message: 'Compra actualizada correctamente'
+            })
         }
 
     } else if (movimiento == 'Insumos') {
@@ -620,12 +702,31 @@ const postCreateBitacora = async (req, res) => {
         } else {
             const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
             values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, responseA[0].ayudante, cliente, observacion, numero_acta, usuario, numero_tinas])
-            res.status(200).send('OK')
+            res.json({
+                message: 'Compra actualizada correctamente'
+            })
         }
 
 
 
     } else if (movimiento == 'Préstamo') {
+
+        const responseC = await db.any("select (nombre || ' ' || apellido) as cliente from tbl_cliente  where cedula=$1", [cliente])
+
+        if (responseC == '') {
+
+            res.status(200).send('errorasdasd  as' + responseC)
+        } else {
+
+
+            const resultCompra = await db.any(`INSERT INTO tbl_bitacora (fecha_actual, movimiento, accion,cantidad, ayudante, cliente, observacion, numero_acta, usuario,numero_tinas) 
+            values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, [fecha_actual, movimiento, accion, cantidad, ayudante, responseC[0].cliente, observacion, numero_acta, usuario, numero_tinas])
+
+            res.status(200).send('OK')
+
+        }
+
+    }else if (movimiento == 'Pedido pendiente') {
 
         const responseC = await db.any("select (nombre || ' ' || apellido) as cliente from tbl_cliente  where cedula=$1", [cliente])
 
@@ -667,6 +768,12 @@ const getClient = async (req, res) => {
 const getProductoById = async (req, res) => {
     const id = req.params.id;
     const response = await db.any('select * from tbl_productos where id=$1', [id])
+    res.json(response[0])
+}
+
+const getDespachoById = async (req, res) => {
+    const id_pedido = req.params.id_pedido;
+    const response = await db.any('select * from tbl_despacho where id_pedido_fk=$1', [id_pedido])
     res.json(response[0])
 }
 
@@ -750,10 +857,13 @@ module.exports = {
     putUpdateUsuarios,
     postCreateUsuarios
     , getDataPedido,
+    despacharpedidoPendiente,
     getnumTInas,
     getnumTInasP,
     getPrestamosss,
     postCreateDevolucionAuto
-    ,getClient
+    , getClient,
+    getDespachoById,
+    getPedidosPendientes
 
 }

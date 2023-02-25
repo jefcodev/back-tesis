@@ -4,7 +4,7 @@ const checkRoleAuth = require("../middleware/rol")
 const { getClientes, putUpdateUsuarios, postCreateUsuarios, getGuardias, getPedidos, getUsuarios, getDespachos, getPrestamos, getInsumos, postCreateClientes, postCreateGuardias,
     postCreatePedidos, postCreateInsumos, postCreatePrestamos, postCreateDespachos, putUpdateClientes, putUpdateGuardias, putUpdatePedidos, putUpdateDespachos,
     putUpdatePrestamos, putUpdateInsumos, getAutoridades, putUpdateAutoridades, postCreateAutoridades, getTinas, getDevolucion, getCompras, getReciclados,
-    postCreateReciclados, getClient,getProductoById, getProducto, crearProducto, actualizarProducto, deleteProducto, postCreateDevolucionAuto, getPrestamosss, getnumTInas, getnumTInasP, getNumPrestamos, getDataPedido, getBitacorabyClientandAyudante, putUpdateReciclados, getPrestamos2, postCreateDevolucion, putUpdateDevolucion, postCreateCompras, putUpdateCompras, getClientesCount, getPedidosCount, getCountPrestamos, getBitacora, postCreateBitacora } = require("../controller/insumos.controller");
+    postCreateReciclados, despacharpedidoPendiente,getDespachoById,getPedidosPendientes,getClient,getProductoById, getProducto, crearProducto, actualizarProducto, deleteProducto, postCreateDevolucionAuto, getPrestamosss, getnumTInas, getnumTInasP, getNumPrestamos, getDataPedido, getBitacorabyClientandAyudante, putUpdateReciclados, getPrestamos2, postCreateDevolucion, putUpdateDevolucion, postCreateCompras, putUpdateCompras, getClientesCount, getPedidosCount, getCountPrestamos, getBitacora, postCreateBitacora } = require("../controller/insumos.controller");
 
 
 
@@ -48,6 +48,7 @@ router.put("/guardias", putUpdateGuardias)
 
 //Pedidos
 router.get("/pedidos", getPedidos)
+router.get("/pendientes", getPedidosPendientes)
 router.get("/pedidosCount", getPedidosCount)
 router.post("/pedidos", postCreatePedidos)
 router.put("/pedidos", putUpdatePedidos)
@@ -111,6 +112,10 @@ router.get("/gettinas/:id_cliente", getnumTInas)
 router.get("/getnumPrestamos", getNumPrestamos)
 
 router.post("/devolucionAuto", postCreateDevolucionAuto)
+
+router.post('/desPedido/:id_pedido', despacharpedidoPendiente)
+router.get('/des/:id_pedido', getDespachoById)
+
 
 module.exports = router
 
